@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机选择器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#6366f1',
+                        accent: '#8b5cf6',
+                        neutral: '#f3f4f6',
+                        'neutral-dark': '#1f2937',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .animate-float {
+                animation: float 3s ease-in-out infinite;
+            }
+            .animate-pulse-slow {
+                animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen font-inter text-neutral-dark">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 标题区域 -->
+        <header class="text-center mb-10">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-gradient bg-gradient-to-r from-primary to-accent mb-2">
+                随机选择器
+            </h1>
+            <p class="text-gray-600 text-lg">从不同组别中随机选择成员，公平公正</p>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- A组 -->
+            <section class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="bg-primary text-white p-4 flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center">
+                        <i class="fa-solid fa-users mr-2"></i>单元组
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button id="add-a-btn" class="bg-white/20 hover:bg-white/30 transition-all rounded p-2">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <button id="remove-a-btn" class="bg-white/20 hover:bg-white/30 transition-all rounded p-2">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="relative">
+                        <input type="text" id="a-search" placeholder="搜索成员..." class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/50 mb-4">
+                        <i class="fa-solid fa-search absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                    <div class="h-[300px] overflow-y-auto pr-2" id="a-list-container">
+                        <ul id="a-list" class="space-y-2">
+                            <!-- A组成员将通过JavaScript动态添加 -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- B组 -->
+            <section class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+                <div class="bg-secondary text-white p-4 flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center">
+                        <i class="fa-solid fa-comments mr-2"></i>对话组
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button id="add-b-btn" class="bg-white/20 hover:bg-white/30 transition-all rounded p-2">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <button id="remove-b-btn" class="bg-white/20 hover:bg-white/30 transition-all rounded p-2">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="relative">
+                        <input type="text" id="b-search" placeholder="搜索成员..." class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 mb-4">
+                        <i class="fa-solid fa-search absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                    <div class="h-[300px] overflow-y-auto pr-2" id="b-list-container">
+                        <ul id="b-list" class="space-y-2">
+                            <!-- B组成员将通过JavaScript动态添加 -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 随机选择结果区域 -->
+        <section class="mt-10 bg-white rounded-xl shadow-lg p-6 transform transition-all hover:shadow-xl duration-300">
+            <h2 class="text-xl font-bold mb-4 text-center text-gradient bg-gradient-to-r from-primary to-accent">
+                随机选择结果
+            </h2>
+            <div class="flex flex-col md:flex-row justify-center items-center gap-6 p-6">
+                <div id="result-a" class="w-full md:w-64 h-40 bg-gradient-to-br from-primary/10 to-primary/20 rounded-xl flex flex-col items-center justify-center shadow-md transition-all duration-500 opacity-0">
+                    <h3 class="text-lg font-semibold text-primary mb-2">单元组选中</h3>
+                    <p class="text-2xl font-bold text-primary animate-pulse-slow" id="result-a-text">--</p>
+                </div>
+                <div class="text-4xl text-gray-300 animate-pulse-slow">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+                <div id="result-b" class="w-full md:w-64 h-40 bg-gradient-to-br from-secondary/10 to-secondary/20 rounded-xl flex flex-col items-center justify-center shadow-md transition-all duration-500 opacity-0">
+                    <h3 class="text-lg font-semibold text-secondary mb-2">对话组选中</h3>
+                    <p class="text-2xl font-bold text-secondary animate-pulse-slow" id="result-b-text">--</p>
+                </div>
+            </div>
+            <div class="text-center mt-6">
+                <button id="random-select-btn" class="bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center mx-auto">
+                    <i class="fa-solid fa-random mr-2"></i> 随机选择
+                </button>
+            </div>
+        </section>
+
+        <!-- 页脚 -->
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>© 2025 随机选择器 | 公平公正的选择工具</p>
+        </footer>
+    </div>
+
+    <!-- 添加成员模态框 -->
+    <div id="add-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800" id="modal-title">添加成员</h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <label for="member-name" class="block text-sm font-medium text-gray-700 mb-1">成员名称</label>
+                    <input type="text" id="member-name" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancel-add" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all">
+                        取消
+                    </button>
+                    <button id="confirm-add" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
+                        确认添加
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化两个成员组
+        let groupA = ["U1", "U2", "U3", "U4", "U5"];
+        let groupB = ["1-A", "1-B", "2-A", "2-B"];
+        
+        // 当前操作的组标识
+        let currentGroup = "A";
+        
+        // DOM元素
+        const aList = document.getElementById('a-list');
+        const bList = document.getElementById('b-list');
+        const addABtn = document.getElementById('add-a-btn');
+        const removeABtn = document.getElementById('remove-a-btn');
+        const addBBtn = document.getElementById('add-b-btn');
+        const removeBBtn = document.getElementById('remove-b-btn');
+        const randomSelectBtn = document.getElementById('random-select-btn');
+        const resultA = document.getElementById('result-a');
+        const resultB = document.getElementById('result-b');
+        const resultAText = document.getElementById('result-a-text');
+        const resultBText = document.getElementById('result-b-text');
+        const addModal = document.getElementById('add-modal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModal = document.getElementById('close-modal');
+        const cancelAdd = document.getElementById('cancel-add');
+        const confirmAdd = document.getElementById('confirm-add');
+        const modalTitle = document.getElementById('modal-title');
+        const memberNameInput = document.getElementById('member-name');
+        const aSearch = document.getElementById('a-search');
+        const bSearch = document.getElementById('b-search');
+        
+        // 初始化列表
+        function updateList(group) {
+            const listElement = group === 'A' ? aList : bList;
+            const members = group === 'A' ? groupA : groupB;
+            const searchTerm = group === 'A' ? aSearch.value.toLowerCase() : bSearch.value.toLowerCase();
+            
+            listElement.innerHTML = '';
+            
+            if (members.length === 0) {
+                const emptyItem = document.createElement('li');
+                emptyItem.className = 'p-4 text-center text-gray-500 italic';
+                emptyItem.textContent = '列表为空';
+                listElement.appendChild(emptyItem);
+                return;
+            }
+            
+            const filteredMembers = members.filter(member => 
+                member.toLowerCase().includes(searchTerm)
+            );
+            
+            if (filteredMembers.length === 0) {
+                const notFoundItem = document.createElement('li');
+                notFoundItem.className = 'p-4 text-center text-gray-500 italic';
+                notFoundItem.textContent = '未找到匹配项';
+                listElement.appendChild(notFoundItem);
+                return;
+            }
+            
+            filteredMembers.forEach((member, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'p-3 bg-gray-50 rounded-lg flex justify-between items-center group hover:bg-gray-100 transition-all';
+                
+                const memberName = document.createElement('span');
+                memberName.className = 'font-medium';
+                memberName.textContent = member;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-opacity';
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                deleteBtn.addEventListener('click', () => removeMember(group, index));
+                
+                listItem.appendChild(memberName);
+                listItem.appendChild(deleteBtn);
+                listElement.appendChild(listItem);
+            });
+        }
+        
+        // 添加成员
+        function addMember(group, name) {
+            if (!name.trim()) {
+                showToast('成员名称不能为空', 'error');
+                return;
+            }
+            
+            if (group === 'A') {
+                if (groupA.includes(name)) {
+                    showToast('单元组中已存在该成员', 'error');
+                    return;
+                }
+                groupA.push(name);
+            } else {
+                if (groupB.includes(name)) {
+                    showToast('对话组中已存在该成员', 'error');
+                    return;
+                }
+                groupB.push(name);
+            }
+            
+            updateList(group);
+            showToast(`已成功添加成员 "${name}"`, 'success');
+            closeAddModal();
+        }
+        
+        // 删除成员
+        function removeMember(group, index) {
+            if (group === 'A') {
+                const removed = groupA.splice(index, 1)[0];
+                updateList('A');
+                showToast(`已删除单元组成员 "${removed}"`, 'info');
+            } else {
+                const removed = groupB.splice(index, 1)[0];
+                updateList('B');
+                showToast(`已删除对话组成员 "${removed}"`, 'info');
+            }
+        }
+        
+        // 随机选择
+        function randomSelect() {
+            if (groupA.length === 0) {
+                showToast('单元组列表为空，请先添加成员', 'warning');
+                return;
+            }
+            
+            if (groupB.length === 0) {
+                showToast('对话组列表为空，请先添加成员', 'warning');
+                return;
+            }
+            
+            // 重置结果区域
+            resultA.style.opacity = '0';
+            resultB.style.opacity = '0';
+            resultAText.textContent = '--';
+            resultBText.textContent = '--';
+            
+            // 显示选择动画
+            let aIndex = Math.floor(Math.random() * groupA.length);
+            let bIndex = Math.floor(Math.random() * groupB.length);
+            
+            // 动画效果
+            const animationDuration = 1500;
+            const animationSteps = 30;
+            const stepDuration = animationDuration / animationSteps;
+            
+            let step = 0;
+            const animationInterval = setInterval(() => {
+                step++;
+                if (step >= animationSteps) {
+                    clearInterval(animationInterval);
+                    // 显示最终结果
+                    setTimeout(() => {
+                        resultAText.textContent = groupA[aIndex];
+                        resultBText.textContent = groupB[bIndex];
+                        resultA.style.opacity = '1';
+                        resultB.style.opacity = '1';
+                        resultA.classList.add('scale-105');
+                        resultB.classList.add('scale-105');
+                        setTimeout(() => {
+                            resultA.classList.remove('scale-105');
+                            resultB.classList.remove('scale-105');
+                        }, 300);
+                    }, 200);
+                } else {
+                    // 随机显示中间结果
+                    resultAText.textContent = groupA[Math.floor(Math.random() * groupA.length)];
+                    resultBText.textContent = groupB[Math.floor(Math.random() * groupB.length)];
+                    resultA.style.opacity = '1';
+                    resultB.style.opacity = '1';
+                }
+            }, stepDuration);
+        }
+        
+        // 打开添加成员模态框
+        function openAddModal(group) {
+            currentGroup = group;
+            modalTitle.textContent = group === 'A' ? '添加单元组成员' : '添加对话组成员';
+            memberNameInput.value = '';
+            memberNameInput.focus();
+            
+            // 显示模态框并添加动画
+            addModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        // 关闭添加成员模态框
+        function closeAddModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                addModal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            // 创建toast元素
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-10 opacity-0 z-50 flex items-center`;
+            
+            // 设置不同类型的样式
+            let iconClass = 'fa-info-circle';
+            let bgColor = 'bg-blue-500';
+            let textColor = 'text-white';
+            
+            if (type === 'success') {
+                iconClass = 'fa-check-circle';
+                bgColor = 'bg-green-500';
+            } else if (type === 'error') {
+                iconClass = 'fa-exclamation-circle';
+                bgColor = 'bg-red-500';
+            } else if (type === 'warning') {
+                iconClass = 'fa-exclamation-triangle';
+                bgColor = 'bg-yellow-500';
+            }
+            
+            toast.classList.add(bgColor, textColor);
+            
+            // 设置内容
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} mr-2"></i>
+                <span>${message}</span>
+            `;
+            
+            // 添加到页面
+            document.body.appendChild(toast);
+            
+            // 显示动画
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+            
+            // 自动关闭
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 搜索功能
+        function setupSearch() {
+            aSearch.addEventListener('input', () => updateList('A'));
+            bSearch.addEventListener('input', () => updateList('B'));
+        }
+        
+        // 事件监听
+        function setupEventListeners() {
+            // 添加成员按钮
+            addABtn.addEventListener('click', () => openAddModal('A'));
+            addBBtn.addEventListener('click', () => openAddModal('B'));
+            
+            // 删除成员按钮
+            removeABtn.addEventListener('click', () => {
+                const selectedItem = aList.querySelector('li.bg-gray-200');
+                if (!selectedItem) {
+                    showToast('请先选择要删除的单元组成员', 'warning');
+                    return;
+                }
+                const index = Array.from(aList.children).indexOf(selectedItem);
+                removeMember('A', index);
+            });
+            
+            removeBBtn.addEventListener('click', () => {
+                const selectedItem = bList.querySelector('li.bg-gray-200');
+                if (!selectedItem) {
+                    showToast('请先选择要删除的对话组成员', 'warning');
+                    return;
+                }
+                const index = Array.from(bList.children).indexOf(selectedItem);
+                removeMember('B', index);
+            });
+            
+            // 列表项点击事件
+            aList.addEventListener('click', (e) => {
+                const listItem = e.target.closest('li');
+                if (listItem) {
+                    // 移除其他选中项
+                    Array.from(aList.children).forEach(item => {
+                        item.classList.remove('bg-gray-200');
+                    });
+                    // 添加选中状态
+                    listItem.classList.add('bg-gray-200');
+                }
+            });
+            
+            bList.addEventListener('click', (e) => {
+                const listItem = e.target.closest('li');
+                if (listItem) {
+                    // 移除其他选中项
+                    Array.from(bList.children).forEach(item => {
+                        item.classList.remove('bg-gray-200');
+                    });
+                    // 添加选中状态
+                    listItem.classList.add('bg-gray-200');
+                }
+            });
+            
+            // 随机选择按钮
+            randomSelectBtn.addEventListener('click', randomSelect);
+            
+            // 模态框事件
+            closeModal.addEventListener('click', closeAddModal);
+            cancelAdd.addEventListener('click', closeAddModal);
+            confirmAdd.addEventListener('click', () => addMember(currentGroup, memberNameInput.value));
+            
+            // 点击模态框外部关闭
+            addModal.addEventListener('click', (e) => {
+                if (e.target === addModal) {
+                    closeAddModal();
+                }
+            });
+            
+            // 回车键添加成员
+            memberNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addMember(currentGroup, memberNameInput.value);
+                }
+            });
+        }
+        
+        // 初始化应用
+        function init() {
+            updateList('A');
+            updateList('B');
+            setupEventListeners();
+            setupSearch();
+        }
+        
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>
+    
